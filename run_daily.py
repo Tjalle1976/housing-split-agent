@@ -98,17 +98,15 @@ def collect_listing_links(search_url):
     response = requests.get(search_url, headers=HEADERS, timeout=30)
     response.raise_for_status()
 
-    soup = BeautifulSoup(response.text, "lxml")
-    links = []
+    html = response.text
 
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
+    # Zoek alle funda koop links direct uit de HTML
+    links = re.findall(r'https://www\.funda\.nl/koop/[^"]+', html)
 
-        # pak koop-detailpagina's
-        if "/koop/" in href:
-            full_url = urljoin(BASE_URL, href.split("?")[0])
-            if full_url not in links:
-                links.append(full_url)
+    # dedupe
+    links = list(dict.fromkeys(links))
+
+    print(f"Found {len(links)} listing links")
 
     return links
 
