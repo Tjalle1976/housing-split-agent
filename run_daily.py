@@ -1,44 +1,36 @@
-import os
 import requests
+from bs4 import BeautifulSoup
 
 print("Housing split agent started")
 
-try:
-    api_key = os.environ.get("SENDGRID_API_KEY")
-    email_to = os.environ.get("EMAIL_TO")
-    email_from = os.environ.get("EMAIL_FROM")
+URL = "https://www.funda.nl/zoeken/koop?selected_area=%5B%22utrecht%22,%22amersfoort%22%5D"
 
-    if not api_key:
-        print("No API key found - skipping email")
-    else:
-        url = "https://api.sendgrid.com/v3/mail/send"
+headers = {
+    "User-Agent": "Mozilla/5.0"
+}
 
-        data = {
-            "personalizations": [
-                {"to": [{"email": email_to}]}
-            ],
-            "from": {"email": email_from},
-            "subject": "Housing split agent test",
-            "content": [
-                {
-                    "type": "text/plain",
-                    "value": "Agent draait"
-                }
-            ]
-        }
+response = requests.get(URL, headers=headers)
+soup = BeautifulSoup(response.text, "html.parser")
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
+links = soup.find_all("a", href=True)
 
-        response = requests.post(url, headers=headers, json=data)
+results = []
 
-        print("Mail status:", response.status_code)
-        print(response.text)
+for link in links:
+    href = link["href"]
 
-except Exception as e:
-    print("ERROR:", str(e))
+    if "/koop/" in href:
+        full_url = "https://www.funda.nl" + href
+
+        text = link.get_text(strip=True)
+
+        if "m²" in text:
+            results.append((text, full_url))
+
+print("\n=== GEVONDEN WONINGEN ===\n")
+
+for i, (text, url) in enumerate(results[:10], 1):
+    print(f"{i}. {text}")
+    print(f"Link: {url}\n")
 
 print("Script finished WITHOUT crashing")
-
