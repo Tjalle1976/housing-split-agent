@@ -1,28 +1,44 @@
 import os
-import smtplib
-from email.mime.text import MIMEText
+import requests
 
 print("Housing split agent started")
 
-smtp_host = os.environ["SMTP_HOST"]
-smtp_port = int(os.environ["SMTP_PORT"])
-smtp_user = os.environ["SMTP_USER"]
-smtp_password = os.environ["SMTP_PASSWORD"]
-email_to = os.environ["EMAIL_TO"]
+try:
+    api_key = os.environ.get("SENDGRID_API_KEY")
+    email_to = os.environ.get("EMAIL_TO")
+    email_from = os.environ.get("EMAIL_FROM")
 
-subject = "Housing split agent test"
-body = "De housing split agent draait succesvol op Render."
+    if not api_key:
+        print("No API key found - skipping email")
+    else:
+        url = "https://api.sendgrid.com/v3/mail/send"
 
-msg = MIMEText(body)
-msg["Subject"] = subject
-msg["From"] = smtp_user
-msg["To"] = email_to
+        data = {
+            "personalizations": [
+                {"to": [{"email": email_to}]}
+            ],
+            "from": {"email": email_from},
+            "subject": "Housing split agent test",
+            "content": [
+                {
+                    "type": "text/plain",
+                    "value": "Agent draait"
+                }
+            ]
+        }
 
-server = smtplib.SMTP(smtp_host, smtp_port)
-server.starttls()
-server.login(smtp_user, smtp_password)
-server.sendmail(smtp_user, email_to, msg.as_string())
-server.quit()
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
 
-print("Test email sent successfully")
+        response = requests.post(url, headers=headers, json=data)
+
+        print("Mail status:", response.status_code)
+        print(response.text)
+
+except Exception as e:
+    print("ERROR:", str(e))
+
+print("Script finished WITHOUT crashing")
 
